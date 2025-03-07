@@ -9,38 +9,44 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 #Read the data
-df=pd.read_csv('C:\\Users\\Adn\\Downloads\\news\\news.csv')
+df = pd.read_csv('c:\\Users\\Adn\\Desktop\\news2.csv', usecols=['title', 'text', 'subject', 'date', 'labels'])
 
-#Get shape and head
-df.shape
-df.head()
+df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
-#DataFlair - Get the labels
-labels=df.label
-labels.head()
+# Split the dataset
+x_train,x_test,y_train,y_test=train_test_split(df['text'], df['labels'], test_size=0.2, random_state=7)
+x_train = x_train.fillna("")  
+x_test = x_test.fillna("")  
 
-#DataFlair - Split the dataset
-x_train,x_test,y_train,y_test=train_test_split(df['text'], labels, test_size=0.2, random_state=7)
-
-#DataFlair - Initialize a TfidfVectorizer
+#Initialize a TfidfVectorizer
 tfidf_vectorizer=TfidfVectorizer(stop_words='english', max_df=0.7)
 
-#DataFlair - Fit and transform train set, transform test set
+mask = y_train.notna()
+x_train = x_train[mask]
+y_train = y_train[mask]
+
+# Fit and transform train set, transform test set
 tfidf_train=tfidf_vectorizer.fit_transform(x_train) 
 tfidf_test=tfidf_vectorizer.transform(x_test)
 
-#DataFlair - Initialize a PassiveAggressiveClassifier
+# Initialize a PassiveAggressiveClassifier
 pac=PassiveAggressiveClassifier(max_iter=50)
 pac.fit(tfidf_train,y_train)
 
-#DataFlair - Predict on the test set and calculate accuracy
+
+# Predict on the test set and calculate accuracy
 y_pred=pac.predict(tfidf_test)
-score=accuracy_score(y_test,y_pred)
-print(f'Accuracy: {round(score*100,2)}%') 
+# Ensure y_test and y_pred are strings (since labels are often categorical)
+y_test = y_test.astype(str)
+y_pred = y_pred.astype(str)
+
+# Calculate accuracy
+score = accuracy_score(y_test, y_pred)
+print(f'Accuracy: {round(score*100, 2)}%')
 
 import joblib
 
-# Save the trained model and vectorizer
+#Save the trained model and vectorizer
 joblib.dump(pac, "model.pkl")  
 joblib.dump(tfidf_vectorizer, "vectorizer.pkl")
 print("Model and vectorizer saved!")
